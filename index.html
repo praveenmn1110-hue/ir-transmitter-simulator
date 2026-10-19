@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arduino IR Transmitter Subsystem Simulator</title>
+  <style>
+    :root {
+      --bg: #1e1e24;
+      --card-bg: #2b2b36;
+      --border: #3f3f50;
+      --primary: #00878f;
+      --primary-hover: #00a3ad;
+      --text: #e1e1e6;
+      --text-muted: #a0a0b0;
+      --accent-red: #e05655;
+      --accent-yellow: #f1fa8c;
+      --accent-cyan: #8be9fd;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #18181f;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    /* Hardware Diagram Styles */
+    .hw-diagram {
+      background-color: #1a1a20;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 16px;
+      position: relative;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .hw-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .diagram-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .comp-block {
+      background: #252530;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    .arduino-node {
+      border-color: var(--primary);
+      background: #132a2c;
+    }
+
+    .status-badge {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #444;
+      margin-right: 6px;
+    }
+
+    .status-badge.active {
+      background-color: var(--accent-red);
+      box-shadow: 0 0 8px var(--accent-red);
+    }
+
+    /* Channel Controls */
+    .channel-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #18181f;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    /* Bit Inspector Visualizer */
+    .bit-display {
+      background-color: #121215;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bit-cells {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .bit-cell {
+      flex: 1;
+      height: 48px;
+      background: #1e1e28;
+      border: 1px solid #3d3d4e;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-weight: bold;
+      transition: all 0.15s ease;
+    }
+
+    .bit-cell .bit-val {
+      font-size: 1.1rem;
+      color: #888;
+    }
+
+    .bit-cell .bit-label {
+      font-size: 0.65rem;
+      color: #666;
+    }
+
+    .bit-cell.active-one {
+      background-color: #2b1f1f;
+      border-color: var(--accent-red);
+    }
+
+    .bit-cell.active-one .bit-val {
+      color: var(--accent-red);
+    }
+
+    .bit-cell.active-zero {
+      background-color: #17242b;
+      border-color: var(--primary);
+    }
+
+    .bit-cell.active-zero .bit-val {
+      color: var(--primary);
+    }
+
+    .bit-cell.current-step {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px rgba(0, 135, 143, 0.5);
+    }
+
+    /* Signal Diagnostics Panel */
+    .diag-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .diag-box {
+      background: #18181f;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .diag-box .lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .diag-box .val {
+      font-size: 1rem;
+      font-family: 'Consolas', monospace;
+      font-weight: bold;
+      color: var(--accent-cyan);
+    }
+
+    /* Console Terminal */
+    .terminal {
+      background-color: #121215;
+      border: 1px solid #2a2a35;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #73daca;
+      height: 160px;
+      overflow-y: auto;
+    }
+
+    .term-line {
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Arduino IR Transmitter Subsystem Simulator</h1>
+    <p>38kHz Carrier Generation & OOK Bitstream Serializer</p>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- 1. Input & Serial Data Buffer Stage -->
+    <div class="card">
+      <div class="card-title">
+        <span>1. Data Input Buffer & Encoder</span>
+        <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Pin 3 (PWM)</span>
+      </div>
+
+      <div class="input-group">
+        <input type="text" id="txInput" value="i" maxlength="11" placeholder="Type text to encode...">
+        <button id="txBtn" onclick="startTx()">Transmit</button>
+      </div>
+
+      <div class="hw-diagram">
+        <div class="hw-title">Arduino MCU Output Stage</div>
+        <div class="diagram-body">
+          <div class="comp-block arduino-node">
+            <strong>ATmega328P</strong><br>
+            <span style="color: #00d2d3;">Timer2 (38kHz PWM)</span>
+          </div>
+          <span style="color: #666;">→ Pin 3 →</span>
+          <div class="comp-block">
+            <strong>1kΩ Resistor</strong><br>
+            <span>Current Limit</span>
+          </div>
+          <span style="color: #666;">→</span>
+          <div class="comp-block">
+            <strong>2N2222 NPN</strong><br>
+            <span id="transistorState">OFF (Cutoff)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Optical LED Emitter & Driver Stage -->
+    <div class="card">
+      <div class="card-title">
+        <span>2. Optical IR Emitter Output</span>
+        <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">940nm Wavelength</span>
+      </div>
+
+      <div class="channel-controls">
+        <label class="toggle-switch">
+          <input type="checkbox" id="audioToggle" checked>
+          <span>🔊 Enable Carrier Beep</span>
+        </label>
+      </div>
+
+      <div class="hw-diagram" style="justify-content: center; align-items: center;">
+        <div class="diagram-body" style="width: 100%;">
+          <div class="comp-block" style="flex: 1;">
+            <strong>IR LED Pin State</strong><br>
+            <span id="ledStatus"><span class="status-badge" id="ledBadge"></span>OFF</span>
+          </div>
+          <div class="comp-block" style="flex: 1.5;">
+            <strong>Optical Beam Status</strong><br>
+            <span id="beamGraphic" style="font-weight: bold; color: #555;">[ IDLE ]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Real-Time OOK Bit Frame Inspector -->
+    <div class="card">
+      <div class="card-title">
+        <span>3. Active Byte Bitstream Inspector</span>
+        <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">MSB First</span>
+      </div>
+
+      <div class="bit-display">
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="activeCharLabel">
+          Frame: IDLE
+        </div>
+        <div class="bit-cells" id="bitCells">
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">START</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B7</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B6</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B5</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B4</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B3</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B2</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B1</span></div>
+          <div class="bit-cell"><span class="bit-val">-</span><span class="bit-label">B0</span></div>
+        </div>
+      </div>
+
+      <div class="diag-grid">
+        <div class="diag-box">
+          <div class="lbl">BIT TIME</div>
+          <div class="val">1000 ms</div>
+        </div>
+        <div class="diag-box">
+          <div class="lbl">CARRIER FREQ</div>
+          <div class="val">38.0 kHz</div>
+        </div>
+        <div class="diag-box">
+          <div class="lbl">ACTIVE BIT</div>
+          <div class="val" id="activeBitVal">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Transmitter Output Terminal Console -->
+    <div class="card">
+      <div class="card-title">
+        <span>4. Transmitter Modulation Log</span>
+        <button onclick="clearConsole()" style="padding: 4px 8px; font-size: 0.75rem;">Clear</button>
+      </div>
+
+      <div class="terminal" id="terminalLog">
+        <div class="term-line">[TX SYSTEM] Transmitter initialized on Pin 3. System ready.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let isTransmitting = false;
+
+    // 1-second bit duration and 100ms separation gap
+    const BIT_PULSE_TIME = 1000; // 1 second duration per bit
+    const BIT_GAP_TIME = 100;    // 100 ms silent gap between bits
+    const CHAR_GAP_TIME = 500;   // Pause between characters
+
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq = 880, durationMs = 1000) {
+      const audioToggle = document.getElementById("audioToggle");
+      if (!audioToggle || !audioToggle.checked) return;
+
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        const now = audioCtx.currentTime;
+        const durationSec = durationMs / 1000;
+
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+        gain.gain.setValueAtTime(0.12, now + durationSec - 0.01);
+        gain.gain.linearRampToValueAtTime(0.001, now + durationSec);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + durationSec);
+      } catch (e) {
+        console.warn("Audio Context Error:", e);
+      }
+    }
+
+    function log(msg) {
+      const term = document.getElementById("terminalLog");
+      if (!term) return;
+      const line = document.createElement("div");
+      line.className = "term-line";
+      line.innerText = msg;
+      term.appendChild(line);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function clearConsole() {
+      document.getElementById("terminalLog").innerHTML = '<div class="term-line">[TX SYSTEM] Console cleared.</div>';
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function setTransmitterHardwareState(carrierActive) {
+      const ledBadge = document.getElementById("ledBadge");
+      const ledStatus = document.getElementById("ledStatus");
+      const beamGraphic = document.getElementById("beamGraphic");
+      const transistorState = document.getElementById("transistorState");
+
+      if (carrierActive) {
+        if (ledBadge) ledBadge.classList.add("active");
+        if (ledStatus) ledStatus.innerHTML = '<span class="status-badge active"></span>38kHz BURST';
+        if (transistorState) {
+          transistorState.innerText = "ON (Saturation)";
+          transistorState.style.color = "#73daca";
+        }
+        if (beamGraphic) {
+          beamGraphic.innerText = ">>> [ 38kHz IR Beam EMITTING ] >>>";
+          beamGraphic.style.color = "#73daca";
+        }
+      } else {
+        if (ledBadge) ledBadge.classList.remove("active");
+        if (ledStatus) ledStatus.innerHTML = '<span class="status-badge"></span>OFF';
+        if (transistorState) {
+          transistorState.innerText = "OFF (Cutoff)";
+          transistorState.style.color = "#aaa";
+        }
+        if (beamGraphic) {
+          beamGraphic.innerText = "[ IR Beam IDLE ]";
+          beamGraphic.style.color = "#555";
+        }
+      }
+    }
+
+    function renderBitInspector(binaryStr, currentBitIdx = -1) {
+      const bitCells = document.getElementById("bitCells");
+      if (!bitCells) return;
+
+      let html = `<div class="bit-cell ${currentBitIdx === 0 ? 'current-step active-one' : ''}">
+                    <span class="bit-val">1</span>
+                    <span class="bit-label">START</span>
+                  </div>`;
+
+      for (let b = 0; b < 8; b++) {
+        const bitVal = binaryStr ? binaryStr[b] : '-';
+        let activeClass = '';
+
+        if (currentBitIdx === b + 1) {
+          activeClass = bitVal === '1' ? 'current-step active-one' : 'current-step active-zero';
+        }
+
+        html += `<div class="bit-cell ${activeClass}">
+                  <span class="bit-val">${bitVal}</span>
+                  <span class="bit-label">B${7 - b}</span>
+                </div>`;
+      }
+
+      bitCells.innerHTML = html;
+    }
+
+    async function startTx() {
+      if (isTransmitting) return;
+
+      initAudio();
+
+      const inputEl = document.getElementById("txInput");
+      const input = inputEl ? inputEl.value.trim() : "";
+      if (!input) return;
+
+      isTransmitting = true;
+      document.getElementById("txBtn").disabled = true;
+
+      const activeCharLabel = document.getElementById("activeCharLabel");
+      const activeBitVal = document.getElementById("activeBitVal");
+
+      log(`[TX] Initiating transmission sequence for: "${input}"`);
+
+      for (let i = 0; i < input.length; i++) {
+        const char = input[i];
+        const ascii = char.charCodeAt(0);
+        const binary = ascii.toString(2).padStart(8, '0');
+
+        if (activeCharLabel) {
+          activeCharLabel.innerText = `Character: '${char}' | ASCII: ${ascii} | Binary: ${binary}`;
+        }
+
+        log(`[TX] Encoding character '${char}' (ASCII ${ascii}) -> Bitstream: ${binary}`);
+
+        // 1. Preamble Start Bit Pulse (1 second)
+        renderBitInspector(binary, 0);
+        if (activeBitVal) activeBitVal.innerText = "START (1)";
+        setTransmitterHardwareState(true);
+        playTone(950, BIT_PULSE_TIME);
+        log(`[TX PIN 3] START PULSE -> 38kHz Carrier BURST ON (1.0s)`);
+        await sleep(BIT_PULSE_TIME);
+
+        setTransmitterHardwareState(false);
+        await sleep(BIT_GAP_TIME);
+
+        // 2. Transmit 8 Bits (MSB first, 1 second per bit)
+        for (let b = 0; b < 8; b++) {
+          const bit = binary[b];
+          renderBitInspector(binary, b + 1);
+
+          if (bit === '1') {
+            if (activeBitVal) activeBitVal.innerText = `B${7-b} = 1`;
+            setTransmitterHardwareState(true);
+            playTone(850, BIT_PULSE_TIME);
+            log(`[TX PIN 3] Bit ${b+1}/8 (B${7-b}) = 1 -> 38kHz Carrier BURST ON (1.0s)`);
+          } else {
+            if (activeBitVal) activeBitVal.innerText = `B${7-b} = 0`;
+            setTransmitterHardwareState(false);
+            playTone(220, BIT_PULSE_TIME);
+            log(`[TX PIN 3] Bit ${b+1}/8 (B${7-b}) = 0 -> Carrier SILENCE OFF (1.0s)`);
+          }
+
+          await sleep(BIT_PULSE_TIME);
+
+          // Force gap separation between bits
+          setTransmitterHardwareState(false);
+          await sleep(BIT_GAP_TIME);
+        }
+
+        // Completion tone per character
+        playTone(1200, 100);
+        await sleep(CHAR_GAP_TIME);
+      }
+
+      if (activeCharLabel) activeCharLabel.innerText = "Frame: TRANSMISSION COMPLETE";
+      if (activeBitVal) activeBitVal.innerText = "-";
+      renderBitInspector("");
+
+      log("[TX SYSTEM] All buffer bytes transmitted successfully.");
+
+      isTransmitting = false;
+      document.getElementById("txBtn").disabled = false;
+      setTransmitterHardwareState(false);
+    }
+  </script>
+</body>
+</html>
